@@ -3,8 +3,8 @@ const CONTACT_EMAIL = "";
 const header = document.querySelector("[data-header]");
 const menuButton = document.querySelector("[data-menu-button]");
 const nav = document.querySelector("[data-nav]");
-const form = document.querySelector("[data-contact-form]");
-const status = document.querySelector("[data-form-status]");
+const projectForm = document.querySelector("[data-project-form]");
+const contactForm = document.querySelector("[data-contact-form]");
 const contactEmail = document.querySelector("[data-contact-email]");
 
 document.querySelector("[data-year]").textContent = new Date().getFullYear();
@@ -30,10 +30,25 @@ nav.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMe
 window.addEventListener("scroll", updateHeader, { passive: true });
 updateHeader();
 
-document.querySelectorAll("[data-subject]").forEach(link => {
+document.querySelectorAll("[data-project-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    const selected = button.dataset.projectFilter;
+    document.querySelectorAll("[data-project-filter]").forEach(filter => {
+      const active = filter === button;
+      filter.classList.toggle("active", active);
+      filter.setAttribute("aria-pressed", String(active));
+    });
+    document.querySelectorAll("[data-project-status]").forEach(card => {
+      const statuses = card.dataset.projectStatus.split(" ");
+      card.classList.toggle("filtered-out", selected !== "all" && !statuses.includes(selected));
+    });
+  });
+});
+
+document.querySelectorAll("[data-quote-type]").forEach(link => {
   link.addEventListener("click", () => {
-    const input = form?.elements.subject;
-    if (input) input.value = link.dataset.subject || "";
+    const select = projectForm?.elements.projectType;
+    if (select) select.value = link.dataset.quoteType || "";
   });
 });
 
@@ -41,34 +56,60 @@ if (CONTACT_EMAIL) {
   contactEmail.textContent = CONTACT_EMAIL;
 }
 
-form.addEventListener("submit", event => {
-  event.preventDefault();
-  const fields = [...form.querySelectorAll("input, textarea")];
+function validateForm(form, status) {
+  const fields = [...form.querySelectorAll("input, textarea, select")];
   fields.forEach(field => field.classList.toggle("invalid", !field.checkValidity()));
+  if (form.checkValidity()) return true;
+  status.textContent = "Vérifiez les champs indiqués avant de continuer.";
+  status.className = "error";
+  fields.find(field => !field.checkValidity())?.focus();
+  return false;
+}
 
-  if (!form.checkValidity()) {
-    status.textContent = "Vérifiez les champs indiqués avant de continuer.";
-    status.className = "error";
-    fields.find(field => !field.checkValidity())?.focus();
-    return;
-  }
-
+function prepareEmail(subject, body, status) {
   if (!CONTACT_EMAIL) {
-    status.textContent = "Le formulaire est prêt. Ajoutez l’e-mail de réception pour activer l’envoi.";
+    status.textContent = "Le formulaire est prêt. L’envoi sera activé dès que l’adresse de réception sera configurée.";
     status.className = "error";
     return;
   }
-
-  const data = new FormData(form);
-  const subject = encodeURIComponent(`[NextLvl Digital] ${data.get("subject")}`);
-  const body = encodeURIComponent(`Nom : ${data.get("name")}\nE-mail : ${data.get("email")}\n\n${data.get("message")}`);
   status.textContent = "Ouverture de votre messagerie…";
   status.className = "success";
-  window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+projectForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const status = projectForm.querySelector("[data-project-form-status]");
+  if (!validateForm(projectForm, status)) return;
+
+  const data = new FormData(projectForm);
+  const details = [
+    `Nom : ${data.get("name")}`,
+    `E-mail : ${data.get("email")}`,
+    `Société / activité : ${data.get("company") || "Non renseigné"}`,
+    `Type de projet : ${data.get("projectType")}`,
+    `Budget approximatif : ${data.get("budget") || "Non renseigné"}`,
+    `Délai souhaité : ${data.get("timeline") || "Non renseigné"}`,
+    `Contact préféré : ${data.get("preferredContact") || "E-mail"}`,
+    "",
+    "Description du projet :",
+    data.get("description")
+  ];
+  prepareEmail(`[Demande de devis] ${data.get("projectType")}`, details.join("\n"), status);
 });
 
-form.querySelectorAll("input, textarea").forEach(field => {
+contactForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const status = contactForm.querySelector("[data-contact-status]");
+  if (!validateForm(contactForm, status)) return;
+  const data = new FormData(contactForm);
+  const body = `Nom : ${data.get("name")}\nE-mail : ${data.get("email")}\n\n${data.get("message")}`;
+  prepareEmail(`[Contact NextLvl Digital] ${data.get("subject")}`, body, status);
+});
+
+document.querySelectorAll(".project-form input, .project-form textarea, .project-form select, .contact-form input, .contact-form textarea").forEach(field => {
   field.addEventListener("input", () => field.classList.remove("invalid"));
+  field.addEventListener("change", () => field.classList.remove("invalid"));
 });
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -81,6 +122,6 @@ if (reduceMotion || !("IntersectionObserver" in window)) {
       entry.target.classList.add("visible");
       observer.unobserve(entry.target);
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -45px" });
+  }, { threshold: 0.1, rootMargin: "0px 0px -35px" });
   document.querySelectorAll(".reveal").forEach(element => observer.observe(element));
 }
