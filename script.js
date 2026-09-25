@@ -6,6 +6,8 @@ const nav = document.querySelector("[data-nav]");
 const projectForm = document.querySelector("[data-project-form]");
 const contactForm = document.querySelector("[data-contact-form]");
 const contactEmail = document.querySelector("[data-contact-email]");
+const logoMotion = document.querySelector("[data-logo-motion]");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 document.querySelector("[data-year]").textContent = new Date().getFullYear();
 
@@ -29,6 +31,21 @@ menuButton.addEventListener("click", () => {
 nav.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
 window.addEventListener("scroll", updateHeader, { passive: true });
 updateHeader();
+
+if (logoMotion && !reduceMotion && window.matchMedia("(pointer: fine)").matches) {
+  const identity = logoMotion.querySelector(".identity-motion");
+  logoMotion.addEventListener("pointermove", event => {
+    const bounds = logoMotion.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+    identity.style.setProperty("--rx", `${(-y * 8).toFixed(2)}deg`);
+    identity.style.setProperty("--ry", `${(x * 10).toFixed(2)}deg`);
+  });
+  logoMotion.addEventListener("pointerleave", () => {
+    identity.style.setProperty("--rx", "0deg");
+    identity.style.setProperty("--ry", "0deg");
+  });
+}
 
 document.querySelectorAll("[data-project-filter]").forEach(button => {
   button.addEventListener("click", () => {
@@ -112,7 +129,6 @@ document.querySelectorAll(".project-form input, .project-form textarea, .project
   field.addEventListener("change", () => field.classList.remove("invalid"));
 });
 
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (reduceMotion || !("IntersectionObserver" in window)) {
   document.querySelectorAll(".reveal").forEach(element => element.classList.add("visible"));
 } else {
