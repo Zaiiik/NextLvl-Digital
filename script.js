@@ -105,7 +105,7 @@ projectForm.addEventListener("submit", event => {
     `E-mail : ${data.get("email")}`,
     `Société / activité : ${data.get("company") || "Non renseigné"}`,
     `Type de projet : ${data.get("projectType")}`,
-    `Budget approximatif : ${data.get("budget") || "Non renseigné"}`,
+    `Cadre du projet : ${data.get("budget") || "À définir ensemble"}`,
     `Délai souhaité : ${data.get("timeline") || "Non renseigné"}`,
     `Contact préféré : ${data.get("preferredContact") || "E-mail"}`,
     "",
